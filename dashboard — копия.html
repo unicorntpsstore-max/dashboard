@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Дашборд выполнения плана менеджеров</title>
+  <!-- Шрифт и иконки -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f4f7fc;
+      padding: 24px;
+      color: #1e293b;
+    }
+
+    .dashboard {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    /* заголовок */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 28px;
+    }
+
+    .header h1 {
+      font-weight: 700;
+      font-size: 28px;
+      letter-spacing: -0.3px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header h1 i {
+      color: #2563eb;
+    }
+
+    .date-badge {
+      background: white;
+      padding: 8px 18px;
+      border-radius: 40px;
+      font-weight: 500;
+      font-size: 14px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+      border: 1px solid #e2e8f0;
+    }
+
+    /* карточки KPI */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .kpi-card {
+      background: white;
+      border-radius: 20px;
+      padding: 20px 18px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+      border: 1px solid #edf2f7;
+      transition: 0.2s;
+    }
+
+    .kpi-card:hover {
+      border-color: #cbd5e1;
+    }
+
+    .kpi-label {
+      font-size: 14px;
+      font-weight: 500;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .kpi-value {
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .kpi-sub {
+      font-size: 14px;
+      font-weight: 500;
+      margin-top: 6px;
+      color: #94a3b8;
+    }
+
+    /* основная сетка графиков */
+    .chart-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 30px;
+    }
+
+    .chart-card {
+      background: white;
+      border-radius: 24px;
+      padding: 20px 20px 10px;
+      border: 1px solid #edf2f7;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+    }
+
+    .chart-card h3 {
+      font-weight: 600;
+      font-size: 16px;
+      margin-bottom: 12px;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .chart-wrapper {
+      height: 200px;
+      position: relative;
+    }
+
+    /* нижняя сетка - таблица и дополнительный график */
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 30px;
+    }
+
+    .table-card {
+      background: white;
+      border-radius: 24px;
+      padding: 20px;
+      border: 1px solid #edf2f7;
+    }
+
+    .table-card h3 {
+      font-weight: 600;
+      font-size: 16px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th {
+      text-align: left;
+      padding: 12px 4px 10px 0;
+      font-weight: 600;
+      color: #475569;
+      border-bottom: 1px solid #e9edf2;
+    }
+
+    td {
+      padding: 12px 4px 12px 0;
+      border-bottom: 1px solid #f1f5f9;
+      vertical-align: middle;
+    }
+
+    /* Стили для полей ввода в таблице */
+    .editable-input {
+      width: 110px;
+      padding: 6px 10px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      font-family: 'Inter', sans-serif;
+      background: white;
+      transition: all 0.2s;
+      color: #1e293b;
+    }
+
+    .editable-input:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .editable-input:hover {
+      border-color: #94a3b8;
+    }
+
+    .editable-input.edited {
+      background: #f0f7ff;
+      border-color: #2563eb;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: #e9edf2;
+      border-radius: 10px;
+      overflow: hidden;
+      min-width: 60px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 10px;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    .progress-fill.high { background: #16a34a; }
+    .progress-fill.medium { background: #eab308; }
+    .progress-fill.low { background: #dc2626; }
+
+    .status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 40px;
+      font-size: 12px;
+      font-weight: 600;
+      background: #dcfce7;
+      color: #166534;
+      transition: all 0.3s;
+      white-space: nowrap;
+    }
+
+    .status-badge.warning {
+      background: #fef9c3;
+      color: #854d0e;
+    }
+
+    .status-badge.danger {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .donut-wrapper {
+      height: 180px;
+      position: relative;
+      margin: 0 auto;
+    }
+
+    /* адаптив */
+    @media (max-width: 900px) {
+      .chart-grid {
+        grid-template-columns: 1fr;
+      }
+      .bottom-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 500px) {
+      .header h1 { font-size: 22px; }
+      .kpi-value { font-size: 26px; }
+      .editable-input { width: 80px; font-size: 12px; }
+    }
+
+    .flex-center {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .gap-2 { gap: 8px; }
+    .mt-2 { margin-top: 12px; }
+    .mb-2 { margin-bottom: 8px; }
+    .text-small { font-size: 13px; color: #64748b; }
+  </style>
+</head>
+<body>
+<div class="dashboard">
+
+  <!-- HEADER -->
+  <div class="header">
+    <h1><i class="fas fa-users"></i> Дашборд менеджеров</h1>
+    <span class="date-badge"><i class="far fa-calendar-alt"></i> Июнь 2026 · Неделя 27</span>
+  </div>
+
+  <!-- KPI - общие показатели -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-label"><i class="fas fa-flag-checkered" style="color:#2563eb;"></i> Общий план</div>
+      <div class="kpi-value" id="totalPlan">₽ 0</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label"><i class="fas fa-circle-check" style="color:#16a34a;"></i> Общий факт</div>
+      <div class="kpi-value" id="totalFact">₽ 0</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label"><i class="fas fa-percent" style="color:#eab308;"></i> Общий %</div>
+      <div class="kpi-value" id="totalPercent">0%</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label"><i class="fas fa-clock" style="color:#8b5cf6;"></i> Осталось</div>
+      <div class="kpi-value" id="totalRemain">₽ 0</div>
+    </div>
+  </div>
+
+  <!-- НИЖНИЙ БЛОК: таблица + гистограмма -->
+  <div class="bottom-grid">
+    <!-- Таблица с редактируемыми полями -->
+    <div class="table-card">
+      <h3>
+        <i class="fas fa-pen-to-square" style="color:#0f172a;"></i> 
+        Редактирование данных
+        <span style="font-size:12px; font-weight:400; color:#94a3b8; margin-left:8px;">
+          (меняйте суммы в полях)
+        </span>
+      </h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Менеджер</th><th>План (₽)</th><th>Факт (₽)</th><th>%</th><th>Статус</th></tr>
+          </thead>
+          <tbody id="managerTableBody">
+            <!-- Данные будут вставлены через JavaScript -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Гистограмма выполнения по менеджерам -->
+    <div class="chart-card">
+      <h3><i class="fas fa-percent" style="color:#16a34a;"></i> % выполнения по менеджерам</h3>
+      <div class="chart-wrapper" style="height:180px;">
+        <canvas id="percentChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ОБЩИЙ ПРОГРЕСС (в конце) -->
+  <div class="chart-card" style="max-width: 500px; margin: 0 auto;">
+    <h3 style="text-align: center; justify-content: center;">
+      <i class="fas fa-circle-half-stroke" style="color:#8b5cf6;"></i> 
+      Общий прогресс команды
+    </h3>
+    <div class="donut-wrapper">
+      <canvas id="donutChart"></canvas>
+    </div>
+    <div class="flex-center gap-2 mt-2" style="font-size:15px; font-weight:600;">
+      <span><span style="display:inline-block; width:14px; height:14px; background:#2563eb; border-radius:4px;"></span> Выполнено <span id="donutPercent" style="color:#2563eb;">0%</span></span>
+      <span><span style="display:inline-block; width:14px; height:14px; background:#e2e8f0; border-radius:4px;"></span> Осталось <span id="donutRemain" style="color:#94a3b8;">0%</span></span>
+    </div>
+    <div class="flex-center mt-2" style="font-size:13px; color:#64748b;">
+      <span>Общий план: <strong id="donutTotalPlan" style="color:#1e293b;">₽ 0</strong></span>
+      <span style="margin: 0 12px;">|</span>
+      <span>Выполнено: <strong id="donutTotalFact" style="color:#16a34a;">₽ 0</strong></span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  (function() {
+    // ---- ДАННЫЕ МЕНЕДЖЕРОВ (в алфавитном порядке, план 4 млн каждый) ----
+    const defaultManagers = [
+      { name: 'Галаутдинова Алиса', plan: 4000000, fact: 0  },
+      { name: 'Узунова Анна', plan: 4000000, fact: 0  },
+      { name: 'Шипицин Дмитрий', plan: 4000000, fact: 0  }
+    ];
+
+    // Текущие данные
+    let managers = [];
+
+    // Ссылки на графики
+    let chartDonut = null;
+    let chartPercent = null;
+
+    // Таймер для debounce обновления
+    let updateTimeout = null;
+
+    // ---- ФУНКЦИЯ ИНИЦИАЛИЗАЦИИ ----
+    function initManagers(data) {
+      managers = data.map(m => ({ ...m }));
+    }
+
+    // ---- ФУНКЦИЯ ОБНОВЛЕНИЯ ВСЕГО ДАШБОРДА ----
+    function updateDashboard() {
+      if (updateTimeout) {
+        clearTimeout(updateTimeout);
+        updateTimeout = null;
+      }
+      
+      updateTimeout = setTimeout(() => {
+        // 1. Расчёт общих показателей
+        const totalPlan = managers.reduce((sum, m) => sum + m.plan, 0);
+        const totalFact = managers.reduce((sum, m) => sum + m.fact, 0);
+        const totalPercent = totalPlan > 0 ? Math.round((totalFact / totalPlan) * 100) : 0;
+        const totalRemain = totalPlan - totalFact;
+
+        // 2. Обновление KPI
+        document.getElementById('totalPlan').textContent = `₽ ${totalPlan.toLocaleString('ru-RU')}`;
+        document.getElementById('totalFact').textContent = `₽ ${totalFact.toLocaleString('ru-RU')}`;
+        document.getElementById('totalPercent').textContent = `${totalPercent}%`;
+        document.getElementById('totalRemain').textContent = `₽ ${totalRemain.toLocaleString('ru-RU')}`;
+
+        // 3. Обновление кольцевой диаграммы (общий прогресс)
+        const donutData = [totalPercent, Math.max(0, 100 - totalPercent)];
+        if (chartDonut) {
+          chartDonut.data.datasets[0].data = donutData;
+          chartDonut.update();
+        }
+        document.getElementById('donutPercent').textContent = `${totalPercent}%`;
+        document.getElementById('donutRemain').textContent = `${100 - totalPercent}%`;
+        document.getElementById('donutTotalPlan').textContent = `₽ ${totalPlan.toLocaleString('ru-RU')}`;
+        document.getElementById('donutTotalFact').textContent = `₽ ${totalFact.toLocaleString('ru-RU')}`;
+
+        // 4. Обновление таблицы (только прогресс-бары и статусы)
+        const rows = document.querySelectorAll('#managerTableBody tr');
+        rows.forEach((row, index) => {
+          if (index >= managers.length) return;
+          
+          const m = managers[index];
+          const percent = m.plan > 0 ? Math.round((m.fact / m.plan) * 100) : 0;
+          
+          const progressFill = row.querySelector('.progress-fill');
+          if (progressFill) {
+            progressFill.style.width = `${Math.min(percent, 100)}%`;
+            progressFill.className = 'progress-fill';
+            if (percent >= 80) progressFill.classList.add('high');
+            else if (percent >= 60) progressFill.classList.add('medium');
+            else progressFill.classList.add('low');
+          }
+          
+          const statusSpan = row.querySelector('.status-badge');
+          if (statusSpan) {
+            let statusText = '✅';
+            let statusClass = 'status-badge';
+            if (percent >= 80) {
+              statusText += ` ${percent}%`;
+            } else if (percent >= 60) {
+              statusClass += ' warning';
+              statusText += ` ⏳ ${percent}%`;
+            } else {
+              statusClass += ' danger';
+              statusText += ` ❗ ${percent}%`;
+            }
+            statusSpan.className = statusClass;
+            statusSpan.textContent = statusText;
+          }
+        });
+
+        // 5. Обновление гистограммы процентов
+        if (chartPercent) {
+          const percentData = managers.map(m => m.plan > 0 ? Math.round((m.fact / m.plan) * 100) : 0);
+          const colors = percentData.map(p => {
+            if (p >= 80) return '#16a34a';
+            if (p >= 60) return '#eab308';
+            return '#dc2626';
+          });
+          chartPercent.data.datasets[0].data = percentData;
+          chartPercent.data.datasets[0].backgroundColor = colors;
+          chartPercent.update();
+        }
+        
+        updateTimeout = null;
+      }, 300);
+    }
+
+    // ---- СОЗДАНИЕ ГРАФИКОВ ----
+    function createCharts() {
+      // Кольцевая диаграмма (общий прогресс)
+      const ctxDonut = document.getElementById('donutChart').getContext('2d');
+      chartDonut = new Chart(ctxDonut, {
+        type: 'doughnut',
+        data: {
+          labels: ['Выполнено', 'Осталось'],
+          datasets: [{
+            data: [0, 100],
+            backgroundColor: ['#2563eb', '#e2e8f0'],
+            borderWidth: 0,
+            hoverOffset: 5,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '70%',
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: (ctx) => `${ctx.raw}%` } }
+          }
+        }
+      });
+
+      // Гистограмма процентов
+      const ctxPercent = document.getElementById('percentChart').getContext('2d');
+      chartPercent = new Chart(ctxPercent, {
+        type: 'bar',
+        data: {
+          labels: managers.map(m => m.name),
+          datasets: [{
+            label: 'Выполнение, %',
+            data: [],
+            backgroundColor: [],
+            borderRadius: 8,
+            barPercentage: 0.6,
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: (ctx) => `${ctx.raw}%` } }
+          },
+          scales: {
+            x: { 
+              max: 100, 
+              grid: { color: '#f1f5f9' }, 
+              ticks: { callback: (val) => val + '%' } 
+            },
+            y: { grid: { display: false } }
+          }
+        }
+      });
+    }
+
+    // ---- СОЗДАНИЕ ТАБЛИЦЫ ----
+    function createTable() {
+      const tableBody = document.getElementById('managerTableBody');
+      tableBody.innerHTML = '';
+      
+      managers.forEach((m, index) => {
+        const percent = m.plan > 0 ? Math.round((m.fact / m.plan) * 100) : 0;
+        let statusClass = 'status-badge';
+        let statusText = '✅';
+        let progressClass = 'progress-fill';
+
+        if (percent >= 80) {
+          statusClass += '';
+          statusText += ` ${percent}%`;
+          progressClass += ' high';
+        } else if (percent >= 60) {
+          statusClass += ' warning';
+          statusText += ` ⏳ ${percent}%`;
+          progressClass += ' medium';
+        } else {
+          statusClass += ' danger';
+          statusText += ` ❗ ${percent}%`;
+          progressClass += ' low';
+        }
+
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td><strong>${m.name}</strong></td>
+          <td>
+            <input type="text" class="editable-input plan-input" 
+                   value="${m.plan}" data-index="${index}"
+                   inputmode="numeric">
+          </td>
+          <td>
+            <input type="text" class="editable-input fact-input" 
+                   value="${m.fact}" data-index="${index}"
+                   inputmode="numeric">
+          </td>
+          <td>
+            <div class="progress-bar">
+              <div class="${progressClass}" style="width:${Math.min(percent, 100)}%;"></div>
+            </div>
+          </td>
+          <td><span class="${statusClass}">${statusText}</span></td>
+        `;
+        tableBody.appendChild(row);
+      });
+
+      // Обработчики событий
+      document.querySelectorAll('.plan-input').forEach(input => {
+        input.addEventListener('input', function() {
+          const index = parseInt(this.dataset.index);
+          let rawValue = this.value.replace(/\D/g, '');
+          if (rawValue === '') rawValue = '0';
+          const newVal = parseInt(rawValue) || 0;
+          managers[index].plan = newVal;
+          this.classList.add('edited');
+          updateDashboard();
+        });
+      });
+
+      document.querySelectorAll('.fact-input').forEach(input => {
+        input.addEventListener('input', function() {
+          const index = parseInt(this.dataset.index);
+          let rawValue = this.value.replace(/\D/g, '');
+          if (rawValue === '') rawValue = '0';
+          const newVal = parseInt(rawValue) || 0;
+          managers[index].fact = newVal;
+          this.classList.add('edited');
+          updateDashboard();
+        });
+      });
+    }
+
+    // ---- ЗАПУСК ----
+    initManagers(defaultManagers);
+    createTable();
+    createCharts();
+    updateDashboard();
+
+  })();
+</script>
+
+</body>
+</html>
