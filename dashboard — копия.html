@@ -1,4 +1,18 @@
 <!DOCTYPE html>
+<html>
+<head>
+<script>
+// Простая защита паролем
+function checkPassword() {
+    var password = prompt('Введите пароль для доступа к дашборду:1111');
+    if (password !== 'admin123') {
+        document.body.innerHTML = '<h1 style="text-align:center;margin-top:100px;color:red;">⛔ Доступ запрещён</h1><p style="text-align:center;">Неверный пароль</p>';
+        return false;
+    }
+    return true;
+}
+checkPassword();
+</script>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
